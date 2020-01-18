@@ -1,0 +1,26 @@
+From 13347e2450c7bfa928eb80b01850e52dfa095802 Mon Sep 17 00:00:00 2001
+From: Tomas Babej <tomasbabej@gmail.com>
+Date: Thu, 28 Jan 2016 15:05:01 +0100
+Subject: [PATCH] resolver: Reject lines with less than two tokens
+
+---
+ dns/resolver.py | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/dns/resolver.py b/dns/resolver.py
+index 55359fa..94360c4 100644
+--- a/dns/resolver.py
++++ b/dns/resolver.py
+@@ -562,8 +562,11 @@ def read_resolv_conf(self, f):
+                 if len(l) == 0 or l[0] == '#' or l[0] == ';':
+                     continue
+                 tokens = l.split()
+-                if len(tokens) == 0:
++
++                # Any line containing less than 2 tokens is malformed
++                if len(tokens) < 2:
+                     continue
++
+                 if tokens[0] == 'nameserver':
+                     self.nameservers.append(tokens[1])
+                 elif tokens[0] == 'domain':

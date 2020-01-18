@@ -4,7 +4,7 @@
 
 Name:           python-dns
 Version:        1.12.0
-Release:        2%{?from_checkout:.20150617git%{shortcommit}}%{?dist}
+Release:        4%{?from_checkout:.20150617git%{shortcommit}}%{?dist}
 Summary:        DNS toolkit for Python
 
 Group:          Development/Languages
@@ -16,6 +16,14 @@ Source0:        https://github.com/rthalley/%{name}/archive/%{commit}.tar.gz
 Source0:        http://www.dnspython.org/kits/%{version}/dnspython-%{version}.tar.gz
 %endif
 Patch0:			incorrect-exception-to-udp-function.patch
+# Reject lines with less than two tokens
+# Fixed upstream: https://github.com/rthalley/dnspython/commit/13347e2450c7bfa928eb80b01850e52dfa095802
+# Resolves:     https://bugzilla.redhat.com/show_bug.cgi?id=1400934
+Patch1:         reject-lines-with-less-than-two-tokens.patch
+# Fix typo in resolver.py
+# Fixed upstream: https://github.com/rthalley/dnspython/commit/84d3c7dffec9c0a380aa5f696ca728879dbe38ac
+# Resolves:     https://bugzilla.redhat.com/show_bug.cgi?id=1440037
+Patch2:         fix-typo-in-resolver.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildArch:      noarch
@@ -34,6 +42,8 @@ manipulation of DNS zones, messages, names, and records.
 %prep
 %setup -q -n rthalley-dnspython-%{?from_checkout:%{shortcommit}}%{!?from_checkout:%{version}}
 %patch0 -p1
+%patch1 -p1
+%patch2 -p1
 
 # strip executable permissions so that we don't pick up dependencies
 # from documentation
@@ -64,6 +74,14 @@ mv test_resolver.py test_resolver.pynorun
 
 
 %changelog
+* Wed Apr 19 2017 Charalampos Stratakis <cstratak@redhat.com> - 1.12.0-4
+- Fix typo in resolver.py
+Resolves: rhbz#1440037
+
+* Tue Feb 14 2017 Charalampos Stratakis <cstratak@redhat.com> - 1.12.0-3
+- Reject lines with less than two tokens
+Resolves: rhbz#1400934
+
 * Tue Mar 08 2016 Charalampos Stratakis <cstratak@redhat.com> - 1.12.0-2
 - Added patch to fix incorrect exception to udp function
 Resolves: rhbz#1312770

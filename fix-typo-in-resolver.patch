@@ -1,0 +1,22 @@
+From 84d3c7dffec9c0a380aa5f696ca728879dbe38ac Mon Sep 17 00:00:00 2001
+From: Martin Basti <mbasti@redhat.com>
+Date: Fri, 29 Jan 2016 18:23:22 +0100
+Subject: [PATCH] Fix typo in resolver.py
+
+---
+ dns/resolver.py | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/dns/resolver.py b/dns/resolver.py
+index 55359fa..b2ca999 100644
+--- a/dns/resolver.py
++++ b/dns/resolver.py
+@@ -95,7 +95,7 @@ class NoNameservers(dns.exception.DNSException):
+     def _fmt_kwargs(self, **kwargs):
+         srv_msgs = []
+         for err in kwargs['errors']:
+-            srv_msgs.append('Server %s %s port %s anwered %s' % (err[0],
++            srv_msgs.append('Server %s %s port %s answered %s' % (err[0],
+                             'TCP' if err[1] else 'UDP', err[2], err[3]))
+         return super(NoNameservers, self)._fmt_kwargs(
+             query=kwargs['request'].question, errors='; '.join(srv_msgs))
