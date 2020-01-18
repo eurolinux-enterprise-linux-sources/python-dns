@@ -14,6 +14,12 @@ apl01.example. 3600 IN APL 1:192.168.32.0/21 !1:192.168.38.0/28
 apl02.example. 3600 IN APL 1:224.0.0.0/4 2:FF00:0:0:0:0:0:0:0/8
 b.example. 300 IN CNAME foo.net.
 c.example. 300 IN A 73.80.65.49
+caa01.example. 3600 IN CAA 0 issue "ca.example.net"
+caa02.example. 3600 IN CAA 0 iodef "mailto:security@example.com"
+caa03.example. 3600 IN CAA 0 iodef "http://iodef.example.com/"
+caa04.example. 3600 IN CAA 0 issue "ca.example.net; account=230123"
+caa05.example. 3600 IN CAA 0 issue "ca.example.net; policy=ev"
+caa06.example. 3600 IN CAA 128 tbs "Unknown"
 cert01.example. 3600 IN CERT 65534 65535 PRIVATEOID MxFcby9k/yvedMfQgKzhH5er0Mu/vILz 45IkskceFGgiWCn/GxHhai6VAuHAoNUz 4YoU1tVfSCSqQYn6//11U6Nld80jEeC8 aTrO+KKmCaY=
 cname01.example. 3600 IN CNAME cname-target.
 cname02.example. 3600 IN CNAME cname-target.example.
@@ -111,6 +117,7 @@ a.u.example. 300 IN A 73.80.65.49
 b.u.example. 300 IN A 73.80.65.49
 unknown2.example. 3600 IN TYPE999 \# 8 0a0000010a000001
 unknown3.example. 3600 IN A 127.0.0.2
+uri0q.example. 3600 IN URI 10 1 "http://www.example.com/"
 wks01.example. 3600 IN WKS 10.0.0.1 6 0 1 2 21 23
 wks02.example. 3600 IN WKS 10.0.0.1 17 0 1 2 53
 wks03.example. 3600 IN WKS 10.0.0.2 6 65535

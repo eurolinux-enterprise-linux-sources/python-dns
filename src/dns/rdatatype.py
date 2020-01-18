@@ -89,6 +89,8 @@ AXFR = 252
 MAILB = 253
 MAILA = 254
 ANY = 255
+URI = 256
+CAA = 257
 TA = 32768
 DLV = 32769
 
@@ -152,6 +154,8 @@ _by_text = {
     'MAILB' : MAILB,
     'MAILA' : MAILA,
     'ANY' : ANY,
+    'URI' : URI,
+    'CAA' : CAA,
     'TA' : TA,
     'DLV' : DLV,
     }
@@ -178,8 +182,7 @@ _singletons = {
 _unknown_type_pattern = re.compile('TYPE([0-9]+)$', re.I);
 
 class UnknownRdatatype(dns.exception.DNSException):
-    """Raised if a type is unknown."""
-    pass
+    """DNS resource record type is unknown."""
 
 def from_text(text):
     """Convert text into a DNS rdata type value.

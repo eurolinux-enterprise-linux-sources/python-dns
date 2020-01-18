@@ -1,4 +1,4 @@
-# Copyright (C) 2003-2007, 2009-2011 Nominum, Inc.
+# Copyright (C) 2006, 2007, 2009-2011 Nominum, Inc.
 #
 # Permission to use, copy, modify, and distribute this software and its
 # documentation for any purpose with or without fee is hereby granted,
@@ -13,7 +13,21 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
 # OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-import dns.rdtypes.nsbase
+import unittest
 
-class NSAP_PTR(dns.rdtypes.nsbase.UncompressedNS):
-    """NSAP-PTR record"""
+import dns.rdata
+import dns.rdataclass
+import dns.rdatatype
+
+class RdataTestCase(unittest.TestCase):
+
+    def test_str(self):
+        rdata = dns.rdata.from_text(dns.rdataclass.IN, dns.rdatatype.A, "1.2.3.4")
+        self.failUnless(rdata.address == "1.2.3.4")
+
+    def test_unicode(self):
+        rdata = dns.rdata.from_text(dns.rdataclass.IN, dns.rdatatype.A, u"1.2.3.4")
+        self.failUnless(rdata.address == "1.2.3.4")
+
+if __name__ == '__main__':
+    unittest.main()

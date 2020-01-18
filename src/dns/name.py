@@ -39,43 +39,34 @@ NAMERELN_EQUAL = 3
 NAMERELN_COMMONANCESTOR = 4
 
 class EmptyLabel(dns.exception.SyntaxError):
-    """Raised if a label is empty."""
-    pass
+    """A DNS label is empty."""
 
 class BadEscape(dns.exception.SyntaxError):
-    """Raised if an escaped code in a text format name is invalid."""
-    pass
+    """An escaped code in a text format of DNS name is invalid."""
 
 class BadPointer(dns.exception.FormError):
-    """Raised if a compression pointer points forward instead of backward."""
-    pass
+    """A DNS compression pointer points forward instead of backward."""
 
 class BadLabelType(dns.exception.FormError):
-    """Raised if the label type of a wire format name is unknown."""
-    pass
+    """The label type in DNS name wire format is unknown."""
 
 class NeedAbsoluteNameOrOrigin(dns.exception.DNSException):
-    """Raised if an attempt is made to convert a non-absolute name to
-    wire when there is also a non-absolute (or missing) origin."""
-    pass
+    """An attempt was made to convert a non-absolute name to
+    wire when there was also a non-absolute (or missing) origin."""
 
 class NameTooLong(dns.exception.FormError):
-    """Raised if a name is > 255 octets long."""
-    pass
+    """A DNS name is > 255 octets long."""
 
 class LabelTooLong(dns.exception.SyntaxError):
-    """Raised if a label is > 63 octets long."""
-    pass
+    """A DNS label is > 63 octets long."""
 
 class AbsoluteConcatenation(dns.exception.DNSException):
-    """Raised if an attempt is made to append anything other than the
-    empty name to an absolute name."""
-    pass
+    """An attempt was made to append anything other than the
+    empty name to an absolute DNS name."""
 
 class NoParent(dns.exception.DNSException):
-    """Raised if an attempt is made to get the parent of the root name
+    """An attempt was made to get the parent of the root name
     or the empty name."""
-    pass
 
 _escaped = {
     '"' : True,
@@ -160,6 +151,13 @@ class Name(object):
 
     def __deepcopy__(self, memo):
         return Name(copy.deepcopy(self.labels, memo))
+
+    def __getstate__(self):
+        return { 'labels' : self.labels }
+
+    def __setstate__(self, state):
+        super(Name, self).__setattr__('labels', state['labels'])
+        _validate_labels(self.labels)
 
     def is_absolute(self):
         """Is the most significant label of this name the root label?
@@ -564,7 +562,7 @@ def from_unicode(text, origin = root):
         text = u''
     if text:
         if text == u'.':
-            return Name([''])	# no Unicode "u" on this constant!
+            return Name([''])        # no Unicode "u" on this constant!
         for c in text:
             if escaping:
                 if edigits == 0:
@@ -587,6 +585,9 @@ def from_unicode(text, origin = root):
                  c == u'\uff0e' or c == u'\uff61':
                 if len(label) == 0:
                     raise EmptyLabel
+                if len(label) > 63:
+                    # otherwise encodings.idna raises UnicodeError later
+                    raise LabelTooLong
                 labels.append(encodings.idna.ToASCII(label))
                 label = u''
             elif c == u'\\':
@@ -597,6 +598,9 @@ def from_unicode(text, origin = root):
                 label += c
         if escaping:
             raise BadEscape
+        if len(label) > 63:
+            # otherwise encodings.idna raises UnicodeError later
+            raise LabelTooLong
         if len(label) > 0:
             labels.append(encodings.idna.ToASCII(label))
         else:

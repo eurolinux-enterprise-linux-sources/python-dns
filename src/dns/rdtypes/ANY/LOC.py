@@ -231,26 +231,26 @@ class LOC(dns.rdata.Rdata):
         t = tok.get_string()
         if t[-1] == 'm':
             t = t[0 : -1]
-        altitude = float(t) * 100.0	# m -> cm
+        altitude = float(t) * 100.0        # m -> cm
 
         token = tok.get().unescape()
         if not token.is_eol_or_eof():
             value = token.value
             if value[-1] == 'm':
                 value = value[0 : -1]
-            size = float(value) * 100.0	# m -> cm
+            size = float(value) * 100.0        # m -> cm
             token = tok.get().unescape()
             if not token.is_eol_or_eof():
                 value = token.value
                 if value[-1] == 'm':
                     value = value[0 : -1]
-                hprec = float(value) * 100.0	# m -> cm
+                hprec = float(value) * 100.0        # m -> cm
                 token = tok.get().unescape()
                 if not token.is_eol_or_eof():
                     value = token.value
                     if value[-1] == 'm':
                         value = value[0 : -1]
-                    vprec = float(value) * 100.0	# m -> cm
+                    vprec = float(value) * 100.0        # m -> cm
                     tok.get_eol()
 
         return cls(rdclass, rdtype, latitude, longitude, altitude,
@@ -312,18 +312,6 @@ class LOC(dns.rdata.Rdata):
                    size, hprec, vprec)
 
     from_wire = classmethod(from_wire)
-
-    def _cmp(self, other):
-        f = cStringIO.StringIO()
-        self.to_wire(f)
-        wire1 = f.getvalue()
-        f.seek(0)
-        f.truncate()
-        other.to_wire(f)
-        wire2 = f.getvalue()
-        f.close()
-
-        return cmp(wire1, wire2)
 
     def _get_float_latitude(self):
         return _tuple_to_float(self.latitude)

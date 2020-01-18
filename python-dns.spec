@@ -1,10 +1,10 @@
 %global from_checkout 1
-%global commit 9329daf40d252f25597f44d5e1db8347304d707f
+%global commit 465785f85f87508209117264c677080e901e957c
 %global shortcommit %(c=%{commit}; echo ${c:0:7})
 
 Name:           python-dns
-Version:        1.11.1
-Release:        2%{?from_checkout:.20140901git%{shortcommit}}%{?dist}
+Version:        1.12.0
+Release:        1%{?from_checkout:.20150617git%{shortcommit}}%{?dist}
 Summary:        DNS toolkit for Python
 
 Group:          Development/Languages
@@ -31,7 +31,7 @@ class, and return an answer set. The low level classes allow direct
 manipulation of DNS zones, messages, names, and records.
 
 %prep
-%setup -q -n dnspython-%{?from_checkout:%{commit}}%{!?from_checkout:%{version}}
+%setup -q -n rthalley-dnspython-%{?from_checkout:%{shortcommit}}%{!?from_checkout:%{version}}
 
 # strip executable permissions so that we don't pick up dependencies
 # from documentation
@@ -62,6 +62,10 @@ mv test_resolver.py test_resolver.pynorun
 
 
 %changelog
+* Wed Jun 17 2015 Matej Stuchlik <mstuchli@redhat.com> - 1.12.0-3.20150617git465785f
+- Update to 1.12.0 (465785f)
+Resolves: rhbz#1196971
+
 * Mon Sep 01 2014 Slavek Kabrda <bkabrda@redhat.com> - 1.11.1-2.20140901git9329daf
 - Rebase to latest upstream commit
 - Remove unnecessary sources and patches
