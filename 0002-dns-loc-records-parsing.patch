@@ -1,0 +1,193 @@
+From 64a52be3cd5a254355a2e7502b9ef1fa21f50a2a Mon Sep 17 00:00:00 2001
+From: Petr Spacek <pspacek@redhat.com>
+Date: Tue, 21 Jan 2014 13:43:05 +0100
+Subject: [PATCH 1/3] test size, vertical and horizontal precision values in
+ LOC records
+
+---
+ tests/rdtypeanyloc.py | 68 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 68 insertions(+)
+ create mode 100644 tests/rdtypeanyloc.py
+
+diff --git a/tests/rdtypeanyloc.py b/tests/rdtypeanyloc.py
+new file mode 100644
+index 0000000..8d9838c
+--- /dev/null
++++ b/tests/rdtypeanyloc.py
+@@ -0,0 +1,68 @@
++# Copyright (C) 2014 Red Hat, Inc.
++# Author: Petr Spacek <pspacek@redhat.com>
++#
++# Permission to use, copy, modify, and distribute this software and its
++# documentation for any purpose with or without fee is hereby granted,
++# provided that the above copyright notice and this permission notice
++# appear in all copies.
++#
++# THE SOFTWARE IS PROVIDED 'AS IS' AND RED HAT DISCLAIMS ALL WARRANTIES
++# WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
++# MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL NOMINUM BE LIABLE FOR
++# ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
++# WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
++# ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
++# OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
++
++import unittest
++
++import dns.rrset
++import dns.rdtypes.ANY.LOC
++
++class RdtypeAnyLocTestCase(unittest.TestCase):
++
++    def testEqual1(self):
++        '''Test default values for size, horizontal and vertical precision.'''
++        r1 = dns.rrset.from_text('foo', 300, 'IN', 'LOC',
++                                 '49 11 42.400 N 16 36 29.600 E 227.64m')
++        r2 = dns.rrset.from_text('FOO', 600, 'in', 'loc',
++                                 '49 11 42.400 N 16 36 29.600 E 227.64m '
++                                 '1.00m 10000.00m 10.00m')
++        self.failUnless(r1 == r2, '"%s" != "%s"' % (r1, r2))
++
++    def testEqual2(self):
++        '''Test default values for size, horizontal and vertical precision.'''
++        r1 = dns.rdtypes.ANY.LOC.LOC(1, 29, (49, 11, 42, 400),
++                                     (16, 36, 29, 600), 22764.0) # centimeters
++        r2 = dns.rdtypes.ANY.LOC.LOC(1, 29, (49, 11, 42, 400),
++                                     (16, 36, 29, 600), 22764.0, # centimeters
++                                     100.0, 1000000.00, 1000.0)  # centimeters
++        self.failUnless(r1 == r2, '"%s" != "%s"' % (r1, r2))
++
++    def testEqual3(self):
++        '''Test size, horizontal and vertical precision parsers: 100 cm == 1 m.
++
++        Parsers in from_text() and __init__() have to produce equal results.'''
++        r1 = dns.rdtypes.ANY.LOC.LOC(1, 29, (49, 11, 42, 400),
++                                     (16, 36, 29, 600), 22764.0,
++                                     200.0, 1000.00, 200.0)      # centimeters
++        r2 = dns.rrset.from_text('FOO', 600, 'in', 'loc',
++                                 '49 11 42.400 N 16 36 29.600 E 227.64m '
++                                 '2.00m 10.00m 2.00m')[0]
++        self.failUnless(r1 == r2, '"%s" != "%s"' % (r1, r2))
++
++    def testEqual4(self):
++        '''Test size, horizontal and vertical precision parsers without unit.
++
++        Parsers in from_text() and __init__() have produce equal result
++        for values with and without trailing "m".'''
++        r1 = dns.rdtypes.ANY.LOC.LOC(1, 29, (49, 11, 42, 400),
++                                     (16, 36, 29, 600), 22764.0,
++                                     200.0, 1000.00, 200.0)      # centimeters
++        r2 = dns.rrset.from_text('FOO', 600, 'in', 'loc',
++                                 '49 11 42.400 N 16 36 29.600 E 227.64 '
++                                 '2 10 2')[0] # meters without explicit unit
++        self.failUnless(r1 == r2, '"%s" != "%s"' % (r1, r2))
++
++if __name__ == '__main__':
++    unittest.main()
+-- 
+1.8.5.1
+
+
+From f8ad77491f1e8c87625920062d2ef34ae0af6968 Mon Sep 17 00:00:00 2001
+From: Petr Spacek <pspacek@redhat.com>
+Date: Tue, 21 Jan 2014 13:49:21 +0100
+Subject: [PATCH 2/3] Fix default size, horizontal and vertical precition
+ values for LOC records.
+
+Default values in RFC 1876 are in meters but the old code used
+the numerical value as centimeters.
+---
+ dns/rdtypes/ANY/LOC.py | 22 +++++++++++++++-------
+ 1 file changed, 15 insertions(+), 7 deletions(-)
+
+diff --git a/dns/rdtypes/ANY/LOC.py b/dns/rdtypes/ANY/LOC.py
+index 154546d..4d4b886 100644
+--- a/dns/rdtypes/ANY/LOC.py
++++ b/dns/rdtypes/ANY/LOC.py
+@@ -22,6 +22,11 @@
+ _pows = (1L, 10L, 100L, 1000L, 10000L, 100000L, 1000000L, 10000000L,
+          100000000L, 1000000000L, 10000000000L)
+ 
++# default values are in centimeters
++_default_size = 100.0
++_default_hprec = 1000000.0
++_default_vprec = 1000.0
++
+ def _exponent_of(what, desc):
+     exp = None
+     for i in xrange(len(_pows)):
+@@ -98,13 +103,14 @@ class LOC(dns.rdata.Rdata):
+                  'horizontal_precision', 'vertical_precision']
+ 
+     def __init__(self, rdclass, rdtype, latitude, longitude, altitude,
+-                 size=1.0, hprec=10000.0, vprec=10.0):
++                 size=_default_size, hprec=_default_hprec, vprec=_default_vprec):
+         """Initialize a LOC record instance.
+ 
+         The parameters I{latitude} and I{longitude} may be either a 4-tuple
+         of integers specifying (degrees, minutes, seconds, milliseconds),
+         or they may be floating point values specifying the number of
+-        degrees.  The other parameters are floats."""
++        degrees. The other parameters are floats. Size, horizontal precision,
++        and vertical precision are specified in centimeters."""
+ 
+         super(LOC, self).__init__(rdclass, rdtype)
+         if isinstance(latitude, int) or isinstance(latitude, long):
+@@ -141,8 +147,10 @@ def to_text(self, origin=None, relativize=True, **kw):
+             self.longitude[3], long_hemisphere, self.altitude / 100.0
+             )
+ 
+-        if self.size != 1.0 or self.horizontal_precision != 10000.0 or \
+-           self.vertical_precision != 10.0:
++        # do not print default values
++        if self.size != _default_size or \
++            self.horizontal_precision != _default_hprec or \
++            self.vertical_precision != _default_vprec:
+             text += " %0.2fm %0.2fm %0.2fm" % (
+                 self.size / 100.0, self.horizontal_precision / 100.0,
+                 self.vertical_precision / 100.0
+@@ -152,9 +160,9 @@ def to_text(self, origin=None, relativize=True, **kw):
+     def from_text(cls, rdclass, rdtype, tok, origin = None, relativize = True):
+         latitude = [0, 0, 0, 0]
+         longitude = [0, 0, 0, 0]
+-        size = 1.0
+-        hprec = 10000.0
+-        vprec = 10.0
++        size = _default_size
++        hprec = _default_hprec
++        vprec = _default_vprec
+ 
+         latitude[0] = tok.get_int()
+         t = tok.get_string()
+-- 
+1.8.5.1
+
+
+From 124851da6c7dbaa07e412dda1fab0e95fa70eaad Mon Sep 17 00:00:00 2001
+From: Petr Spacek <pspacek@redhat.com>
+Date: Tue, 21 Jan 2014 14:07:24 +0100
+Subject: [PATCH 3/3] Fix vertical precision parsing for LOC records.
+
+Vertical precision value was ignored if the optional 'm' (unit)
+was missing at the end of input and rest of the input was ignored.
+---
+ dns/rdtypes/ANY/LOC.py | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/dns/rdtypes/ANY/LOC.py b/dns/rdtypes/ANY/LOC.py
+index 4d4b886..863c184 100644
+--- a/dns/rdtypes/ANY/LOC.py
++++ b/dns/rdtypes/ANY/LOC.py
+@@ -248,8 +248,8 @@ def from_text(cls, rdclass, rdtype, tok, origin = None, relativize = True):
+                     value = token.value
+                     if value[-1] == 'm':
+                         value = value[0 : -1]
+-                        vprec = float(value) * 100.0	# m -> cm
+-                        tok.get_eol()
++                    vprec = float(value) * 100.0	# m -> cm
++                    tok.get_eol()
+ 
+         return cls(rdclass, rdtype, latitude, longitude, altitude,
+                    size, hprec, vprec)
+-- 
+1.8.5.1
+
