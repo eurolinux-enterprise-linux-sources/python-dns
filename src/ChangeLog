@@ -1,3 +1,152 @@
+2014-07-24  Bob Halley  <halley@dnspython.org>
+
+    * The 64-bit version of Python on Windows has sys.maxint set to 2^31-1,
+      yet passes 2^63-1 as the "unspecified bound" value in slices.
+      This is a bug in Python as the documentation says the unspecified
+      bound value should be sys.maxint.  We now cope with this.  Thanks to
+      Matthäus Wander for reporting the problem.
+
+2014-06-21  Bob Halley  <halley@dnspython.org>
+
+    * When reading from a masterfile, if the first content line started
+      with leading whitespace, we raised an ugly exception instead of
+      doing the right thing, namely using the zone origin as the name.
+      [#73]  Thanks to Tassatux for reporting the issue.
+
+    * Added dns.zone.to_text() convenience method.  Thanks to Brandon Whaley
+      <redkrieg@gmail.com> for the patch.
+
+    * The /etc/resolv.conf setting "options rotate" is now understood by the
+      resolver.  If present, the resolver will shuffle the nameserver list
+      each time dns.resolver.query() is called.  Thanks to underrun for the
+      patch.  Note that you don't want to add "options rotate" to your
+      /etc/resolv.conf if your system's resolver library does not understand
+      it.  In this case, just set resolver.rotate = True by hand.
+
+2014-06-19  Bob Halley  <halley@dnspython.org>
+
+    * Escaping of Unicode has been corrected.  Previously we escaped and
+      then converted to Unicode, but the right thing to do is convert to
+      Unicode, then escape.  Also, characters > 0x7f should NOT be escaped
+      in Unicode mode.  Thanks to Martin Basti for the patch.
+
+    * dns.rdtypes.ANY.DNSKEY now has helpers functions to convert between
+      the numeric form of the flags and a set of human-friendly strings.
+      Thanks to Petr Spacek for the patch.
+
+    * RRSIGs did not respect relativization settings in to_text().  Thanks
+      to Brian Smith for reporting the bug and submitting a (slightly different) patch.
+
+2014-06-18  Bob Halley  <halley@dnspython.org>
+
+    * dns/rdtypes/IN/APL.py: The APL from_wire() method did not accept an
+      rdata length of 0 as valid.  Thanks to salzmdan for reporting the
+      problem.
+
+2014-05-31  Bob Halley  <halley@dnspython.org>
+
+	* dns/ipv6.py: Add is_mapped()
+
+	* dns/reversename.py: Lookup IPv6 mapped IPv4 addresses in the v4
+	  reverse namespace.  Thanks to Devin Bayer.  Yes, I finally fixed
+	  this one :)
+
+2014-04-11  Bob Halley  <halley@dnspython.org>
+
+	* dns/zone.py: Do not put back an unescaped token.  This was
+	  causing escape processing for domain names to break.  Thanks to
+	  connormclaud for reporting the problem.
+
+2014-04-04  Bob Halley  <halley@dnspython.org>
+
+	* dns/message.py: Making a response didn't work correctly if the
+	  query was signed with TSIG and we knew the key.  Thanks to Jeffrey
+	  Stiles for reporting the problem.
+
+2013-12-11  Bob Halley  <halley@dnspython.org>
+
+	* dns/query.py: Fix problems with the IXFR state machine which caused
+	  long diffs to fail.  Thanks to James Raftery for the fix and the
+	  repeated prodding to get it applied :)
+
+2013-09-02  Bob Halley  <halley@dnspython.org>
+
+	* (Version 1.11.1 released)
+
+2013-09-01  Bob Halley  <halley@dnspython.org>
+
+	* dns/tsigkeyring.py (to_text): we want keyname.to_text(), not
+	  dns.name.to_text(keyname).  Thangs to wangwang for the fix.
+
+2013-08-26  Bob Halley  <halley@dnspython.org>
+
+	* dns/tsig.py (sign): multi-message TSIGs were broken for
+	  algorithms other than HMAC-MD5 because we weren't passing the
+	  right digest module to the HMAC code.  Thanks to salzmdan for
+	  reporting the bug.
+
+2013-08-09  Bob Halley  <halley@dnspython.org>
+
+	* dns/dnssec.py (_find_candidate_keys): we tried to extract the
+	  key from the wrong variable name.  Thanks to Andrei Fokau for the
+	  fix.
+
+2013-07-08  Bob Halley  <halley@dnspython.org>
+
+	* dns/resolver.py: we want 'self.retry_servfail' not just
+	  retry_servfail.  Reported by many, thanks!  Thanks to
+	  Jeffrey C. Ollie for the fix.
+
+2013-07-08  Bob Halley  <halley@dnspython.org>
+
+	* tests/grange.py: fix tests to use older-style print formatting
+	  for backwards compatibility with python 2.4.  Thanks to
+	  Jeffrey C. Ollie for the fix.
+
+2013-07-01  Bob Halley  <halley@dnspython.org>
+
+	* (Version 1.11.0 released)
+
+2013-04-28  Bob Halley  <halley@dnspython.org>
+
+	* dns/name.py (Name.to_wire): Do not add items with offsets >= 2^14
+	  to the compression table.  Thanks to Casey Deccio for discovering
+	  this bug.
+
+2013-04-26  Bob Halley  <halley@dnspython.org>
+
+	* dns/ipv6.py (inet_ntoa): We now comply with RFC 5952 section
+	  5.2.2, by *not* using the :: syntax to shorten just one 16-bit
+	  field.  Thanks to David Waitzman for reporting the bug and
+	  suggesting the fix.
+
+2013-03-31  Bob Halley  <halley@dnspython.org>
+
+	* lock caches in case they are shared
+
+	* raise YXDOMAIN if we see one
+
+	* do not print empty rdatasets
+
+	* Add contributed $GENERATE support (thanks uberj)
+
+	* Remove DNSKEY keytag uniqueness assumption (RFC 4034, section 8)
+	  (thanks James Dempsey)
+
+2012-09-25  Sean Leach
+
+	* added set_flags() method to dns.resolver.Resolver
+
+2012-09-25  Pieter Lexis
+
+	* added support for TLSA RR
+
+2012-08-28  Bob Halley  <halley@dnspython.org>
+
+	* dns/rdtypes/ANY/NSEC3.py (NSEC3.from_text): The NSEC3 from_text()
+	  method could erroneously emit empty bitmap windows (i.e. windows
+	  with a count of 0 bytes); such bitmaps are illegal.
+
 2012-04-08  Bob Halley  <halley@dnspython.org>
 
 	* (Version 1.10.0 released)

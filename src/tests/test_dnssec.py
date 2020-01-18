@@ -30,6 +30,13 @@ abs_keys = { abs_dnspython_org :
                                  '256 3 5 AwEAAdSSghOGjU33IQZgwZM2Hh771VGXX05olJK49FxpSyuEAjDBXY58 LGU9R2Zgeecnk/b9EAhFu/vCV9oECtiTCvwuVAkt9YEweqYDluQInmgP NGMJCKdSLlnX93DkjDw8rMYv5dqXCuSGPlKChfTJOLQxIAxGloS7lL+c 0CTZydAF')
          }
 
+abs_keys_duplicate_keytag = { abs_dnspython_org :
+             dns.rrset.from_text('dnspython.org.', 3600, 'IN', 'DNSKEY',
+                                 '257 3 5 AwEAAenVTr9L1OMlL1/N2ta0Qj9LLLnnmFWIr1dJoAsWM9BQfsbV7kFZ XbAkER/FY9Ji2o7cELxBwAsVBuWn6IUUAJXLH74YbC1anY0lifjgt29z SwDzuB7zmC7yVYZzUunBulVW4zT0tg1aePbpVL2EtTL8VzREqbJbE25R KuQYHZtFwG8S4iBxJUmT2Bbd0921LLxSQgVoFXlQx/gFV2+UERXcJ5ce iX6A6wc02M/pdg/YbJd2rBa0MYL3/Fz/Xltre0tqsImZGxzi6YtYDs45 NC8gH+44egz82e2DATCVM1ICPmRDjXYTLldQiWA2ZXIWnK0iitl5ue24 7EsWJefrIhE=',
+                                 '256 3 5 AwEAAdSSg++++THIS/IS/NOT/THE/CORRECT/KEY++++++++++++++++ ++++++++++++++++++++++++++++++++++++++++++++++++++++++++ ++++++++++++++++++++++++++++++++++++++++++++++++++++++++ AaOSydAF',
+                                 '256 3 5 AwEAAdSSghOGjU33IQZgwZM2Hh771VGXX05olJK49FxpSyuEAjDBXY58 LGU9R2Zgeecnk/b9EAhFu/vCV9oECtiTCvwuVAkt9YEweqYDluQInmgP NGMJCKdSLlnX93DkjDw8rMYv5dqXCuSGPlKChfTJOLQxIAxGloS7lL+c 0CTZydAF')
+         }
+
 rel_keys = { dns.name.empty :
              dns.rrset.from_text('@', 3600, 'IN', 'DNSKEY',
                                  '257 3 5 AwEAAenVTr9L1OMlL1/N2ta0Qj9LLLnnmFWIr1dJoAsWM9BQfsbV7kFZ XbAkER/FY9Ji2o7cELxBwAsVBuWn6IUUAJXLH74YbC1anY0lifjgt29z SwDzuB7zmC7yVYZzUunBulVW4zT0tg1aePbpVL2EtTL8VzREqbJbE25R KuQYHZtFwG8S4iBxJUmT2Bbd0921LLxSQgVoFXlQx/gFV2+UERXcJ5ce iX6A6wc02M/pdg/YbJd2rBa0MYL3/Fz/Xltre0tqsImZGxzi6YtYDs45 NC8gH+44egz82e2DATCVM1ICPmRDjXYTLldQiWA2ZXIWnK0iitl5ue24 7EsWJefrIhE=',
@@ -90,21 +97,68 @@ example_ds_sha1 = dns.rdata.from_text(dns.rdataclass.IN, dns.rdatatype.DS,
 example_ds_sha256 = dns.rdata.from_text(dns.rdataclass.IN, dns.rdatatype.DS,
                                         '18673 3 2 eb8344cbbf07c9d3d3d6c81d10c76653e28d8611a65e639ef8f716e4e4e5d913')
 
+when3 = 1379801800
+
+abs_ecdsa256_keys = { abs_example :
+                      dns.rrset.from_text('example.', 86400, 'IN', 'DNSKEY',
+                                          "256 3 13 +3ss1sCpdARVA61DJigEsL/8quo2a8MszKtn2gkkfxgzFs8S2UHtpb4N fY+XFmNW+JK6MsCkI3jHYN8eEQUgMw==",
+                                          "257 3 13 eJCEVH7AS3wnoaQpaNlAXH0W8wxymtT9P6P3qjN2ZCV641ED8pF7wZ5V yWfOpgTs6oaZevbJgehl/GaRPUgVyQ==")
+                 }
+
+abs_ecdsa256_soa = dns.rrset.from_text('example.', 86400, 'IN', 'SOA',
+                                       'ns1.example. hostmaster.example. 4 10800 3600 604800 86400')
+
+abs_other_ecdsa256_soa = dns.rrset.from_text('example.', 86400, 'IN', 'SOA',
+                                             'ns1.example. hostmaster.example. 2 10800 3600 604800 86401')
+
+abs_ecdsa256_soa_rrsig = dns.rrset.from_text('example.', 86400, 'IN', 'RRSIG',
+                                             "SOA 13 1 86400 20130921221753 20130921221638 7460 example. Sm09SOGz1ULB5D/duwdE2Zpn8bWbVBM77H6N1wPkc42LevvVO+kZEjpq 2nq4GOMJcih52667GIAbMrwmU5P2MQ==")
+
+when4 = 1379804850
+
+abs_ecdsa384_keys = { abs_example :
+                      dns.rrset.from_text('example.', 86400, 'IN', 'DNSKEY',
+                                          "256 3 14 1bG8qWviKNXQX3BIuG6/T5jrP1FISiLW/8qGF6BsM9DQtWYhhZUA3Owr OAEiyHAhQwjkN2kTvWiAYoPN80Ii+5ff9/atzY4F9W50P4l75Dj9PYrL HN/hLUgWMNVc9pvA",
+                                          "257 3 14 mSub2n0KRt6u2FaD5XJ3oQu0R4XvB/9vUJcyW6+oo0y+KzfQeTdkf1ro ZMVKoyWXW9zUKBYGJpMUIdbAxzrYi7f5HyZ3yDpBFz1hw9+o3CX+gtgb +RyhHfJDwwFXBid9")
+                 }
+
+abs_ecdsa384_soa = dns.rrset.from_text('example.', 86400, 'IN', 'SOA',
+                                       'ns1.example. hostmaster.example. 2 10800 3600 604800 86400')
+
+abs_other_ecdsa384_soa = dns.rrset.from_text('example.', 86400, 'IN', 'SOA',
+                                             'ns1.example. hostmaster.example. 2 10800 3600 604800 86401')
+
+abs_ecdsa384_soa_rrsig = dns.rrset.from_text('example.', 86400, 'IN', 'RRSIG',
+                                             "SOA 14 1 86400 20130929021229 20130921230729 63571 example. CrnCu34EeeRz0fEhL9PLlwjpBKGYW8QjBjFQTwd+ViVLRAS8tNkcDwQE NhSV89NEjj7ze1a/JcCfcJ+/mZgnvH4NHLNg3Tf6KuLZsgs2I4kKQXEk 37oIHravPEOlGYNI")
+
 class DNSSECValidatorTestCase(unittest.TestCase):
 
+    @unittest.skipIf(not dns.dnssec._have_pycrypto,
+                     "PyCrypto cannot be imported")
     def testAbsoluteRSAGood(self):
         dns.dnssec.validate(abs_soa, abs_soa_rrsig, abs_keys, None, when)
 
+    @unittest.skipIf(not dns.dnssec._have_pycrypto,
+                     "PyCrypto cannot be imported")
+    def testDuplicateKeytag(self):
+        dns.dnssec.validate(abs_soa, abs_soa_rrsig, abs_keys_duplicate_keytag, None, when)
+
+    @unittest.skipIf(not dns.dnssec._have_pycrypto,
+                     "PyCrypto cannot be imported")
     def testAbsoluteRSABad(self):
         def bad():
             dns.dnssec.validate(abs_other_soa, abs_soa_rrsig, abs_keys, None,
                                 when)
         self.failUnlessRaises(dns.dnssec.ValidationFailure, bad)
 
+    @unittest.skipIf(not dns.dnssec._have_pycrypto,
+                     "PyCrypto cannot be imported")
     def testRelativeRSAGood(self):
         dns.dnssec.validate(rel_soa, rel_soa_rrsig, rel_keys,
                             abs_dnspython_org, when)
 
+    @unittest.skipIf(not dns.dnssec._have_pycrypto,
+                     "PyCrypto cannot be imported")
     def testRelativeRSABad(self):
         def bad():
             dns.dnssec.validate(rel_other_soa, rel_soa_rrsig, rel_keys,
@@ -115,10 +169,14 @@ class DNSSECValidatorTestCase(unittest.TestCase):
         ds = dns.dnssec.make_ds(abs_dnspython_org, sep_key, 'SHA256')
         self.failUnless(ds == good_ds)
 
+    @unittest.skipIf(not dns.dnssec._have_pycrypto,
+                     "PyCrypto cannot be imported")
     def testAbsoluteDSAGood(self):
         dns.dnssec.validate(abs_dsa_soa, abs_dsa_soa_rrsig, abs_dsa_keys, None,
                             when2)
 
+    @unittest.skipIf(not dns.dnssec._have_pycrypto,
+                     "PyCrypto cannot be imported")
     def testAbsoluteDSABad(self):
         def bad():
             dns.dnssec.validate(abs_other_dsa_soa, abs_dsa_soa_rrsig,
@@ -132,6 +190,35 @@ class DNSSECValidatorTestCase(unittest.TestCase):
     def testMakeExampleSHA256DS(self):
         ds = dns.dnssec.make_ds(abs_example, example_sep_key, 'SHA256')
         self.failUnless(ds == example_ds_sha256)
+
+    @unittest.skipIf(not dns.dnssec._have_ecdsa,
+                     "python ECDSA cannot be imported")
+    def testAbsoluteECDSA256Good(self):
+        dns.dnssec.validate(abs_ecdsa256_soa, abs_ecdsa256_soa_rrsig,
+                            abs_ecdsa256_keys, None, when3)
+
+    @unittest.skipIf(not dns.dnssec._have_ecdsa,
+                     "python ECDSA cannot be imported")
+    def testAbsoluteECDSA256Bad(self):
+        def bad():
+            dns.dnssec.validate(abs_other_ecdsa256_soa, abs_ecdsa256_soa_rrsig,
+                                abs_ecdsa256_keys, None, when3)
+        self.failUnlessRaises(dns.dnssec.ValidationFailure, bad)
+
+    @unittest.skipIf(not dns.dnssec._have_ecdsa,
+                     "python ECDSA can not be imported")
+    def testAbsoluteECDSA384Good(self):
+        dns.dnssec.validate(abs_ecdsa384_soa, abs_ecdsa384_soa_rrsig,
+                            abs_ecdsa384_keys, None, when4)
+
+    @unittest.skipIf(not dns.dnssec._have_ecdsa,
+                     "python ECDSA can not be imported")
+    def testAbsoluteECDSA384Bad(self):
+        def bad():
+            dns.dnssec.validate(abs_other_ecdsa384_soa, abs_ecdsa384_soa_rrsig,
+                                abs_ecdsa384_keys, None, when4)
+        self.failUnlessRaises(dns.dnssec.ValidationFailure, bad)
+
 
 if __name__ == '__main__':
     import_ok = False

@@ -121,6 +121,20 @@ class ZoneTestCase(unittest.TestCase):
                 os.unlink('example2.out')
         self.failUnless(ok)
 
+    def testToText(self):
+        z = dns.zone.from_file('example', 'example')
+        ok = False
+        try:
+            text_zone = z.to_text(nl='\x0a')
+            f = open('example3.out', 'wb')
+            f.write(text_zone)
+            f.close()
+            ok = filecmp.cmp('example3.out', 'example3.good')
+        finally:
+            if not _keep_output:
+                os.unlink('example3.out')
+        self.failUnless(ok)
+
     def testFromText(self):
         z = dns.zone.from_text(example_text, 'example.', relativize=True)
         f = cStringIO.StringIO()
@@ -129,7 +143,7 @@ class ZoneTestCase(unittest.TestCase):
         for n in names:
             print >> f, z[n].to_text(n)
         self.failUnless(f.getvalue() == example_text_output)
-            
+
     def testTorture1(self):
         #
         # Read a zone containing all our supported RR types, and
@@ -384,6 +398,15 @@ class ZoneTestCase(unittest.TestCase):
             z = dns.zone.from_text(bad_directive_text, 'example.',
                                    relativize=True)
         self.failUnlessRaises(dns.exception.SyntaxError, bad)
+
+    def testFirstRRStartsWithWhitespace(self):
+        # no name is specified, so default to the intial origin
+        # no ttl is specified, so default to the initial TTL of 0
+        z = dns.zone.from_text(' IN A 10.0.0.1', origin='example.',
+                               check_origin=False)
+        n = z['@']
+        rds = n.get_rdataset(dns.rdataclass.IN, dns.rdatatype.A)
+        self.failUnless(rds.ttl == 0)
 
 if __name__ == '__main__':
     unittest.main()

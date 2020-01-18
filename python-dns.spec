@@ -1,37 +1,24 @@
-%if 0%{?fedora} > 12
-%global with_python3 1
-%else
-%{!?python_sitelib: %global python_sitelib %(%{__python} -c "from distutils.sysconfig import get_python_lib; print (get_python_lib())")}
-%endif
+%global from_checkout 1
+%global commit 9329daf40d252f25597f44d5e1db8347304d707f
+%global shortcommit %(c=%{commit}; echo ${c:0:7})
 
 Name:           python-dns
-Version:        1.10.0
-Release:        5%{?dist}
+Version:        1.11.1
+Release:        2%{?from_checkout:.20140901git%{shortcommit}}%{?dist}
 Summary:        DNS toolkit for Python
 
 Group:          Development/Languages
 License:        MIT
 URL:            http://www.dnspython.org/
+%if 0%{?from_checkout}
+Source0:        https://github.com/rthalley/%{name}/archive/%{commit}.tar.gz
+%else
 Source0:        http://www.dnspython.org/kits/%{version}/dnspython-%{version}.tar.gz
-Source1:        http://www.dnspython.org/kits/%{version}/dnspython-%{version}.tar.gz.asc
-Source2:        http://www.dnspython.org/kits3/%{version}/dnspython3-%{version}.tar.gz
-Source3:        http://www.dnspython.org/kits3/%{version}/dnspython3-%{version}.tar.gz.asc
-Patch1:         dnspython-1.10.1-tlsa.patch
-# Patch2 https://github.com/rthalley/dnspython/issues/47
-Patch2:         0002-dns-loc-records-parsing.patch
+%endif
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildArch:      noarch
-%if 0%{?fedora} >= 8
-BuildRequires: python-setuptools-devel
-%else
 BuildRequires: python-setuptools
-%endif
-
-%if 0%{?with_python3}
-BuildRequires:  python3-devel
-BuildRequires:  python3-setuptools
-%endif
 
 %description
 dnspython is a DNS toolkit for Python. It supports almost all record
@@ -43,34 +30,8 @@ level classes perform queries for data of a given name, type, and
 class, and return an answer set. The low level classes allow direct
 manipulation of DNS zones, messages, names, and records.
 
-
-%if 0%{?with_python3}
-%package     -n python3-dns
-Summary:        DNS toolkit for Python 3
-Group:          Development/Languages
-
-%description -n python3-dns
-dnspython3 is a DNS toolkit for Python 3. It supports almost all record
-types. It can be used for queries, zone transfers, and dynamic
-updates. It supports TSIG authenticated messages and EDNS0.
-
-dnspython3 provides both high and low level access to DNS. The high
-level classes perform queries for data of a given name, type, and
-class, and return an answer set. The low level classes allow direct
-manipulation of DNS zones, messages, names, and records.
-%endif
-
-
 %prep
-%setup -q -n dnspython-%{version}
-%setup -T -D -a 2 -q -n dnspython-%{version}
-%patch1 -p1 -b .tlsa
-%patch2 -p1
-
-%if 0%{?with_python3}
-rm -rf %{py3dir}
-cp -a dnspython3-%{version} %{py3dir}
-%endif
+%setup -q -n dnspython-%{?from_checkout:%{commit}}%{!?from_checkout:%{version}}
 
 # strip executable permissions so that we don't pick up dependencies
 # from documentation
@@ -80,70 +41,38 @@ find examples -type f | xargs chmod a-x
 %build
 CFLAGS="%{optflags}" %{__python} -c 'import setuptools; execfile("setup.py")' build
 
-%if 0%{?with_python3}
-pushd %{py3dir}
-CFLAGS="%{optflags}" %{__python3} setup.py build
-popd
-%endif
-
 
 %install
 rm -rf %{buildroot}
 %{__python} -c 'import setuptools; execfile("setup.py")' install --skip-build --root %{buildroot}
 
-%if 0%{?with_python3}
-pushd %{py3dir}
-%{__python3} -c 'import setuptools; exec(open("setup.py").read())' install \
-    --skip-build --root %{buildroot}
-popd
-%endif
-
 
 %check
 pushd tests
 # skip one test because it queries the network
-for py in *.py
-do
-        if [ $py != resolver.py ]
-        then
-                PYTHONPATH=%{buildroot}%{python_sitelib} %{__python} $py
-        fi
-done
+mv test_resolver.py test_resolver.pynorun
+%{__python} utest.py
 
-%if 0%{?with_python3}
-pushd %{py3dir}/tests
-for py in *.py
-do
-    if [ $py != resolver.py ]
-    then
-        PYTHONPATH=%{buildroot}%{python3_sitelib} %{__python3} $py
-    fi
-done
-popd
-%endif
-
-
-%clean
-rm -rf %{buildroot}
 
 %files
-%defattr(-,root,root,-)
 %doc ChangeLog LICENSE README examples
 
 %{python_sitelib}/*egg-info
 %{python_sitelib}/dns
 
-%if 0%{?with_python3}
-%files -n python3-dns
-%defattr(-,root,root,-)
-%doc dnspython3-%{version}/{ChangeLog,LICENSE,README,examples}
-
-%{python3_sitelib}/*egg-info
-%{python3_sitelib}/dns
-%endif
-
 
 %changelog
+* Mon Sep 01 2014 Slavek Kabrda <bkabrda@redhat.com> - 1.11.1-2.20140901git9329daf
+- Rebase to latest upstream commit
+- Remove unnecessary sources and patches
+- Specfile cleanup
+Resolves: rhbz#1112999
+
+* Tue Aug 26 2014 Slavek Kabrda <bkabrda@redhat.com> - 1.11.1-1
+- Rebase to version 1.11.1
+- Remove downstream patch that was merged upstream
+Resolves: rhbz#1112999
+
 * Tue Jan 28 2014 Robert Kuska <rkuska@redhat.com> - 1.10.0-5
 - Patch to fix LOC records parsing
 Resolves: rhbz#1056747

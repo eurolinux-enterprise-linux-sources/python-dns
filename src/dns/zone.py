@@ -18,6 +18,7 @@
 from __future__ import generators
 
 import sys
+import re
 
 import dns.exception
 import dns.name
@@ -28,6 +29,12 @@ import dns.rdata
 import dns.rrset
 import dns.tokenizer
 import dns.ttl
+import dns.grange
+
+try:
+    from cStringIO import StringIO
+except ImportError:
+    from io import StringIO
 
 class BadZone(dns.exception.DNSException):
     """The zone is malformed."""
@@ -503,6 +510,27 @@ class Zone(object):
             if want_close:
                 f.close()
 
+    def to_text(self, sorted=True, relativize=True, nl=None):
+        """Return a zone's text as though it were written to a file.
+
+        @param sorted: if True, the file will be written with the
+        names sorted in DNSSEC order from least to greatest.  Otherwise
+        the names will be written in whatever order they happen to have
+        in the zone's dictionary.
+        @param relativize: if True, domain names in the output will be
+        relativized to the zone's origin (if possible).
+        @type relativize: bool
+        @param nl: The end of line string.  If not specified, the
+        output will use the platform's native end-of-line marker (i.e.
+        LF on POSIX, CRLF on Windows, CR on Macintosh).
+        @type nl: string or None
+        """
+        temp_buffer = StringIO()
+        self.to_file(temp_buffer, sorted, relativize, nl)
+        return_value = temp_buffer.getvalue()
+        temp_buffer.close()
+        return return_value
+
     def check_origin(self):
         """Do some simple checking of the zone's origin.
 
@@ -555,7 +583,7 @@ class _MasterReader(object):
         self.current_origin = origin
         self.relativize = relativize
         self.ttl = 0
-        self.last_name = None
+        self.last_name = self.current_origin
         self.zone = zone_factory(origin, rdclass, relativize=relativize)
         self.saved_state = []
         self.current_file = None
@@ -641,6 +669,166 @@ class _MasterReader(object):
         rds = n.find_rdataset(rdclass, rdtype, covers, True)
         rds.add(rd, ttl)
 
+    def _parse_modify(self, side):
+        # Here we catch everything in '{' '}' in a group so we can replace it
+        # with ''.
+        is_generate1 = re.compile("^.*\$({(\+|-?)(\d+),(\d+),(.)}).*$")
+        is_generate2 = re.compile("^.*\$({(\+|-?)(\d+)}).*$")
+        is_generate3 = re.compile("^.*\$({(\+|-?)(\d+),(\d+)}).*$")
+        # Sometimes there are modifiers in the hostname. These come after
+        # the dollar sign. They are in the form: ${offset[,width[,base]]}.
+        # Make names
+        g1 = is_generate1.match(side)
+        if g1:
+            mod, sign, offset, width, base = g1.groups()
+            if sign == '':
+                sign = '+'
+        g2 = is_generate2.match(side)
+        if g2:
+            mod, sign, offset = g2.groups()
+            if sign == '':
+                sign = '+'
+            width = 0
+            base = 'd'
+        g3 = is_generate3.match(side)
+        if g3:
+            mod, sign, offset, width = g1.groups()
+            if sign == '':
+                sign = '+'
+            width = g1.groups()[2]
+            base = 'd'
+
+        if not (g1 or g2 or g3):
+            mod = ''
+            sign = '+'
+            offset = 0
+            width = 0
+            base = 'd'
+
+        if base != 'd':
+            raise NotImplemented
+
+        return mod, sign, offset, width, base
+
+    def _generate_line(self):
+        # range lhs [ttl] [class] type rhs [ comment ]
+        """Process one line containing the GENERATE statement from a DNS
+        master file."""
+        if self.current_origin is None:
+            raise UnknownOrigin
+
+        token = self.tok.get()
+        # Range (required)
+        try:
+            start, stop, step = dns.grange.from_text(token.value)
+            token = self.tok.get()
+            if not token.is_identifier():
+                raise dns.exception.SyntaxError
+        except:
+            raise dns.exception.SyntaxError
+
+        # lhs (required)
+        try:
+            lhs = token.value
+            token = self.tok.get()
+            if not token.is_identifier():
+                raise dns.exception.SyntaxError
+        except:
+            raise dns.exception.SyntaxError
+
+        # TTL
+        try:
+            ttl = dns.ttl.from_text(token.value)
+            token = self.tok.get()
+            if not token.is_identifier():
+                raise dns.exception.SyntaxError
+        except dns.ttl.BadTTL:
+            ttl = self.ttl
+        # Class
+        try:
+            rdclass = dns.rdataclass.from_text(token.value)
+            token = self.tok.get()
+            if not token.is_identifier():
+                raise dns.exception.SyntaxError
+        except dns.exception.SyntaxError:
+            raise dns.exception.SyntaxError
+        except:
+            rdclass = self.zone.rdclass
+        if rdclass != self.zone.rdclass:
+            raise dns.exception.SyntaxError("RR class is not zone's class")
+        # Type
+        try:
+            rdtype = dns.rdatatype.from_text(token.value)
+            token = self.tok.get()
+            if not token.is_identifier():
+                raise dns.exception.SyntaxError
+        except:
+            raise dns.exception.SyntaxError("unknown rdatatype '%s'" %
+                    token.value)
+
+        # lhs (required)
+        try:
+            rhs = token.value
+        except:
+            raise dns.exception.SyntaxError
+
+
+        lmod, lsign, loffset, lwidth, lbase = self._parse_modify(lhs)
+        rmod, rsign, roffset, rwidth, rbase = self._parse_modify(rhs)
+        for i in range(start, stop + 1, step):
+            # +1 because bind is inclusive and python is exclusive
+
+            if lsign == '+':
+                lindex = i + int(loffset)
+            elif lsign == '-':
+                lindex = i - int(loffset)
+
+            if rsign == '-':
+                rindex = i - int(roffset)
+            elif rsign == '+':
+                rindex = i + int(roffset)
+
+            lzfindex = str(lindex).zfill(int(lwidth))
+            rzfindex = str(rindex).zfill(int(rwidth))
+
+
+            name = lhs.replace('$%s' % (lmod), lzfindex)
+            rdata = rhs.replace('$%s' % (rmod), rzfindex)
+
+            self.last_name = dns.name.from_text(name, self.current_origin)
+            name = self.last_name
+            if not name.is_subdomain(self.zone.origin):
+                self._eat_line()
+                return
+            if self.relativize:
+                name = name.relativize(self.zone.origin)
+
+            n = self.zone.nodes.get(name)
+            if n is None:
+                n = self.zone.node_factory()
+                self.zone.nodes[name] = n
+            try:
+                rd = dns.rdata.from_text(rdclass, rdtype, rdata,
+                                         self.current_origin, False)
+            except dns.exception.SyntaxError:
+                # Catch and reraise.
+                (ty, va) = sys.exc_info()[:2]
+                raise va
+            except:
+                # All exceptions that occur in the processing of rdata
+                # are treated as syntax errors.  This is not strictly
+                # correct, but it is correct almost all of the time.
+                # We convert them to syntax errors so that we can emit
+                # helpful filename:line info.
+                (ty, va) = sys.exc_info()[:2]
+                raise dns.exception.SyntaxError("caught exception %s: %s" %
+                        (str(ty), str(va)))
+
+            rd.choose_relativity(self.zone.origin, self.relativize)
+            covers = rd.covers()
+            rds = n.find_rdataset(rdclass, rdtype, covers, True)
+            rds.add(rd, ttl)
+
     def read(self):
         """Read a DNS master file and build a zone object.
 
@@ -650,7 +838,7 @@ class _MasterReader(object):
 
         try:
             while 1:
-                token = self.tok.get(True, True).unescape()
+                token = self.tok.get(True, True)
                 if token.is_eof():
                     if not self.current_file is None:
                         self.current_file.close()
@@ -682,8 +870,6 @@ class _MasterReader(object):
                             self.zone.origin = self.current_origin
                     elif u == '$INCLUDE' and self.allow_include:
                         token = self.tok.get()
-                        if not token.is_quoted_string():
-                            raise dns.exception.SyntaxError("bad filename in $INCLUDE")
                         filename = token.value
                         token = self.tok.get()
                         if token.is_identifier():
@@ -703,6 +889,8 @@ class _MasterReader(object):
                         self.tok = dns.tokenizer.Tokenizer(self.current_file,
                                                            filename)
                         self.current_origin = new_origin
+                    elif u == '$GENERATE':
+                        self._generate_line()
                     else:
                         raise dns.exception.SyntaxError("Unknown master file directive '" + u + "'")
                     continue
