@@ -1,0 +1,53 @@
+From daf723176da7bfee5baae928ff1af310a2400289 Mon Sep 17 00:00:00 2001
+From: Bob Halley <halley@dnspython.org>
+Date: Sun, 21 Feb 2016 15:22:21 -0800
+Subject: [PATCH] Set response_time to zero when exceptions occur early.
+
+---
+ dns/query.py | 12 ++++++++++--
+ 1 file changed, 10 insertions(+), 2 deletions(-)
+
+diff --git a/dns/query.py b/dns/query.py
+index ad6dffd..4e8089f 100644
+--- a/dns/query.py
++++ b/dns/query.py
+@@ -204,6 +204,7 @@ def udp(q, where, timeout=None, port=53, af=None, source=None, source_port=0,
+     (af, destination, source) = _destination_and_source(af, where, port, source,
+                                                         source_port)
+     s = socket.socket(af, socket.SOCK_DGRAM, 0)
++    begin_time = None
+     try:
+         expiration = _compute_expiration(timeout)
+         s.setblocking(0)
+@@ -224,7 +225,10 @@ def udp(q, where, timeout=None, port=53, af=None, source=None, source_port=0,
+                                        '%s instead of %s' % (from_address,
+                                                              destination))
+     finally:
+-        response_time = time.time() - begin_time
++        if begin_time is None:
++            response_time = 0
++        else:
++            response_time = time.time() - begin_time
+         s.close()
+     r = dns.message.from_wire(wire, keyring=q.keyring, request_mac=q.mac,
+                               one_rr_per_rrset=one_rr_per_rrset)
+@@ -301,6 +305,7 @@ def tcp(q, where, timeout=None, port=53, af=None, source=None, source_port=0,
+     (af, destination, source) = _destination_and_source(af, where, port, source,
+                                                         source_port)
+     s = socket.socket(af, socket.SOCK_STREAM, 0)
++    begin_time = None
+     try:
+         expiration = _compute_expiration(timeout)
+         s.setblocking(0)
+@@ -320,7 +325,10 @@ def tcp(q, where, timeout=None, port=53, af=None, source=None, source_port=0,
+         (l,) = struct.unpack("!H", ldata)
+         wire = _net_read(s, l, expiration)
+     finally:
+-        response_time = time.time() - begin_time
++        if begin_time is None:
++            response_time = 0
++        else:
++            response_time = time.time() - begin_time
+         s.close()
+     r = dns.message.from_wire(wire, keyring=q.keyring, request_mac=q.mac,
+                               one_rr_per_rrset=one_rr_per_rrset)

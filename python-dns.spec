@@ -4,7 +4,7 @@
 
 Name:           python-dns
 Version:        1.12.0
-Release:        1%{?from_checkout:.20150617git%{shortcommit}}%{?dist}
+Release:        2%{?from_checkout:.20150617git%{shortcommit}}%{?dist}
 Summary:        DNS toolkit for Python
 
 Group:          Development/Languages
@@ -15,10 +15,11 @@ Source0:        https://github.com/rthalley/%{name}/archive/%{commit}.tar.gz
 %else
 Source0:        http://www.dnspython.org/kits/%{version}/dnspython-%{version}.tar.gz
 %endif
+Patch0:			incorrect-exception-to-udp-function.patch
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
 BuildArch:      noarch
-BuildRequires: python-setuptools
+BuildRequires:  python-setuptools
 
 %description
 dnspython is a DNS toolkit for Python. It supports almost all record
@@ -32,6 +33,7 @@ manipulation of DNS zones, messages, names, and records.
 
 %prep
 %setup -q -n rthalley-dnspython-%{?from_checkout:%{shortcommit}}%{!?from_checkout:%{version}}
+%patch0 -p1
 
 # strip executable permissions so that we don't pick up dependencies
 # from documentation
@@ -62,7 +64,11 @@ mv test_resolver.py test_resolver.pynorun
 
 
 %changelog
-* Wed Jun 17 2015 Matej Stuchlik <mstuchli@redhat.com> - 1.12.0-3.20150617git465785f
+* Tue Mar 08 2016 Charalampos Stratakis <cstratak@redhat.com> - 1.12.0-2
+- Added patch to fix incorrect exception to udp function
+Resolves: rhbz#1312770
+
+* Wed Jun 17 2015 Matej Stuchlik <mstuchli@redhat.com> - 1.12.0-1.20150617git465785f
 - Update to 1.12.0 (465785f)
 Resolves: rhbz#1196971
 
